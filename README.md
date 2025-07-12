@@ -1,47 +1,53 @@
-# ✨🚀 Advanced Real-Time Emotion Analysis & Micro-Expression Detection
+# 🎯 Advanced Real-Time Emotion Analysis & Micro-Expression Detection
 
 <div align="center">
-  <img src="https://media.giphy.com/media/LmNwrBhejkK9EFP504/giphy.gif" width="500" alt="Emotion Detection"/>
+  <img src="https://media.giphy.com/media/kGCuRgmbnO5pK/giphy.gif" width="500" alt="Emotion AI"/>
 </div>
 
-Hey there! 👋 Welcome to this **cutting-edge project by [Shayan Taherkhani](https://shayantaherkhani.ir)** that elevates real-time emotion analysis to a whole new level.
-This isn’t just another face detection script — it’s a **sophisticated AI system** combining:
-
-✅ Multi-model ensemble detection
-✅ Micro-expression recognition
-✅ Rich visualizations
-✅ Real-time performance
-
-…and much more. 🚀
+👋 Welcome to this **AI-powered emotion recognition and micro-expression detection system**, meticulously crafted by **Shayan Taherkhani**.
+This is **not just a simple face detector** — it’s a **multi-threaded, ensemble-based analysis platform** designed for **research-grade real-time emotion insights**.
 
 ---
 
-## ✨ Features That Will Amaze You
+## ✨ Key Features
 
-| ⚡ Feature                              | 💡 Description                                                                                                                   |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 🎭 **Hybrid Emotion Analysis**         | An ensemble of **DeepFace** and **FER2013 Mini-XCEPTION** models deliver robust, accurate detection. No single point of failure! |
-| 🌐 **Optional Online API Integration** | Seamlessly connect to external APIs for richer insights (just set `USE_ONLINE_API = True`).                                      |
-| 🔬 **Micro-Expression Detection**      | Uses **optical flow** to track fleeting facial micro-expressions like *Up Movement* and *Down-Left Movement*.                    |
-| 📊 **Dynamic Visualizations**          | Live probability bars, emotion history graphs (with **Savitzky-Golay smoothing**), and FPS counters.                             |
-| 🔊 **Auditory Feedback**               | Instant audio cues for detected emotions (e.g., cheerful sounds for happiness).                                                  |
-| 📸 **High-Resolution Video**           | Capture in **1920×1080 @60FPS** for crystal-clear analysis.                                                                      |
-| 🔒 **Thread-Safe Processing**          | Analysis runs in a separate thread for smooth video.                                                                             |
-| 🧑‍💻 **Developer Showcase**           | Your info elegantly displayed on the video feed.                                                                                 |
+✅ **Hybrid Ensemble Emotion Detection**
 
-<div align="center">
-  <img src="https://i.imgur.com/PLxDScN.png" width="600" alt="Feature Showcase"/>
-</div>
+* Leverages **DeepFace**, a custom **FER2013 Mini-XCEPTION** model, and an **optional online API**.
+* Weighted probability fusion for accurate and resilient predictions.
+
+✅ **Real-Time Micro-Expression Tracking**
+
+* Uses **optical flow analysis** to detect subtle micro-movements.
+* Classifies motion direction (*Up Movement*, *Down-Left Movement*, etc.) for deeper emotional context.
+
+✅ **Dynamic Visual Feedback**
+
+* Live overlay of:
+
+  * Emotion probability bars
+  * Smoothed emotion history graphs
+  * Real-time FPS and timestamps
+  * Developer branding
+
+✅ **Auditory Feedback**
+
+* Plays instant sounds when specific emotions are detected.
+
+✅ **High-Performance Video Processing**
+
+* Captures **1920×1080 @60FPS** with optimized buffering and threading.
+
+✅ **Customizable and Extensible**
+
+* Adjustable sensitivity, detection intervals, and thresholds.
+* Easy integration of new models or APIs.
 
 ---
 
-## 🛠️ Quick Setup
+## 🛠️ Quick Start Guide
 
-Ready to get started? Follow these steps:
-
----
-
-### ✅ Install dependencies:
+### 1️⃣ Install dependencies
 
 ```bash
 pip install opencv-python mediapipe deepface pygame tensorflow requests scipy
@@ -49,30 +55,27 @@ pip install opencv-python mediapipe deepface pygame tensorflow requests scipy
 
 ---
 
-### 📥 Download the FER2013 Model
+### 2️⃣ Download FER2013 model
 
-➡️ [**Download FER2013 Mini-XCEPTION**](https://github.com/oarriaga/face_classification/blob/master/trained_models/emotion_models/fer2013_mini_XCEPTION.102-0.66.hdf5)
+[📥 Download here](https://github.com/oarriaga/face_classification/blob/master/trained_models/emotion_models/fer2013_mini_XCEPTION.102-0.66.hdf5)
 
-**Place it in the same directory as your script.**
-
----
-
-### 🌐 Enable Online API (Optional)
-
-* Replace `API_ENDPOINT` with your actual endpoint.
-* Set `USE_ONLINE_API = True`.
-* Add your `API_KEY`.
+> **Place the file in the project directory.**
 
 ---
 
-### 🎛️ Adjust Sensitivity
+### 3️⃣ (Optional) Configure Online API
 
-* Tweak `min_detection_confidence` and `min_tracking_confidence` (recommended: `0.85`).
-* Change the **optical flow threshold** (`3.0` by default).
+Edit `API_ENDPOINT` and `API_KEY` in the code:
+
+```python
+API_ENDPOINT = "https://api.example.com/emotion"
+API_KEY = "your_api_key_here"
+USE_ONLINE_API = True
+```
 
 ---
 
-### ▶️ Run the Application
+### 4️⃣ Run the application
 
 ```bash
 python emotion_detection.py
@@ -80,43 +83,148 @@ python emotion_detection.py
 
 ---
 
-## 🎯 Performance Tuning Tips
+## ⚙️ How It Works
 
-**Optimize the experience to your needs:**
+<div align="center">
+  <img src="https://miro.medium.com/v2/resize:fit:1400/format:webp/1*Yur5G_0Z_1eJG0wFLSRtKQ.png" width="600" alt="Emotion Flow"/>
+</div>
 
-| 🛠️ Goal              | 🔧 What to Adjust                                                                                                |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| 🧠 Higher Sensitivity | Decrease `analysis_interval` (e.g., `0.2–0.3s`), raise optical flow threshold (`5.0+`), lower smoothing factors. |
-| ⚡ Better Performance  | Lower camera resolution (720p), set `USE_ONLINE_API=False`, disable FER model if not needed.                     |
-| 🎯 Higher Precision   | Increase `min_detection_confidence` (`0.9+`), add more ensemble models, use a high-quality camera.               |
+1. **Video Capture**
+
+   * Opens high-resolution webcam stream.
+   * Configures FPS and buffer for minimal latency.
+
+2. **Face Mesh Landmark Detection**
+
+   * Mediapipe extracts 468 landmarks in real-time.
+
+3. **Bounding Box & Cropping**
+
+   * Dynamically crops the detected face region.
+
+4. **Multi-Model Emotion Analysis**
+
+   * DeepFace and FER2013 model predictions are fused.
+   * Optionally queries an online API.
+
+5. **Probability Smoothing**
+
+   * Applies exponential and Savitzky-Golay filters.
+
+6. **Visualization & Feedback**
+
+   * Draws overlays, bars, graphs, and text.
+   * Plays emotion-specific sounds.
+
+7. **Micro-Expression Detection**
+
+   * Optical flow tracks subtle frame-to-frame movements.
+   * Directional motion classified as micro-expressions.
 
 ---
 
-## 🙋‍♂️ About the Developer
+## 🎨 Example Visual Output
 
-Made with ❤️ by **Shayan Taherkhani**
+<div align="center">
+  <img src="https://i.imgur.com/PLxDScN.png" width="600" alt="Emotion Display"/>
+</div>
+
+---
+
+## 🎯 Customization Options
+
+**Sensitivity & Interval**
+
+* `analysis_interval`: Default `0.3s` between detections.
+* `min_detection_confidence`: Recommended `0.85`.
+
+**Micro-Expression Threshold**
+
+* `avg_magnitude`: Adjust `>3.0` for more/less sensitivity.
+
+**Performance**
+
+* Reduce resolution or FPS for slower machines.
+* Disable online API (`USE_ONLINE_API = False`) to save bandwidth.
+
+**Precision**
+
+* Increase confidence threshold.
+* Add more ensemble models.
+
+---
+
+## 🔊 Sound Effects
+
+The system plays **instant auditory cues** when emotions are detected.
+Easily customize by replacing:
+
+```python
+sound_effects = {
+    "happy": pygame.mixer.Sound("sounds/happy.wav"),
+    "sad": pygame.mixer.Sound("sounds/sad.wav"),
+}
+```
+
+---
+
+## 💡 Advanced Tips
+
+✅ **Threaded Analysis**
+
+* Emotion detection runs in a **background thread**.
+* Prevents blocking video display.
+
+✅ **Smoothing & Filtering**
+
+* Emotion probabilities blended with **exponential smoothing**.
+* History curves smoothed with **Savitzky-Golay filter**.
+
+✅ **Extensible Design**
+
+* Plug in new models or APIs with minimal changes.
+
+---
+
+## 👨‍💻 Developer Information
 
 <table>
-  <tr>
-    <td><strong>🌐 Website</strong></td>
-    <td><a href="https://shayantaherkhani.ir">shayantaherkhani.ir</a></td>
-  </tr>
-  <tr>
-    <td><strong>🐙 GitHub</strong></td>
-    <td><a href="https://github.com/shayanthn">@shayanthn</a></td>
-  </tr>
-  <tr>
-    <td><strong>✉️ Email</strong></td>
-    <td><a href="mailto:admin@shayantaherkhani.ir">admin@shayantaherkhani.ir</a></td>
-  </tr>
+<tr>
+<td><strong>Name</strong></td>
+<td>Shayan Taherkhani</td>
+</tr>
+<tr>
+<td><strong>🌐 Website</strong></td>
+<td><a href="https://shayantaherkhani.ir">shayantaherkhani.ir</a></td>
+</tr>
+<tr>
+<td><strong>🐙 GitHub</strong></td>
+<td><a href="https://github.com/shayanthn">@shayanthn</a></td>
+</tr>
+<tr>
+<td><strong>✉️ Email</strong></td>
+<td><a href="mailto:admin@shayantaherkhani.ir">admin@shayantaherkhani.ir</a></td>
+</tr>
 </table>
 
 ---
 
+## 🧠 Why Use This Project?
+
+✅ **Research-Grade Precision**
+✅ **Beautiful Real-Time Visualizations**
+✅ **Fully Threaded, No Lag**
+✅ **Customizable & Extensible**
+✅ **Micro-Expression Analysis Beyond Standard APIs**
+
+---
+
 <div align="center">
-  <img src="https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif" width="400" alt="AI Emotion"/>
+  <img src="https://media.giphy.com/media/LmNwrBhejkK9EFP504/giphy.gif" width="400" alt="AI Analysis"/>
 </div>
 
-**This advanced system provides unprecedented detail in emotion analysis — multiple verification layers, micro-expression detection, and a beautiful real-time visualization of human emotions.**
+**Explore the uncharted world of real-time emotion AI.
+Push the limits of perception.
+Make your applications truly aware.**
 
-> **Get ready to explore the fascinating world of emotion AI!** 🧠👁️✨
+✨ **Let’s build the future together.** ✨
