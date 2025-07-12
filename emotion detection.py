@@ -4,140 +4,219 @@ import mediapipe as mp
 from deepface import DeepFace
 import numpy as np
 import threading
-import turtle
-from PIL import ImageFont, ImageDraw, Image
-import ctypes
+import time
+import pygame
+from collections import deque
+from datetime import datetime
 
-# 🔹 غیرفعال کردن هشدارهای TensorFlow برای افزایش سرعت
+# 🔹 Configuration
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
-# 🔹 راه‌اندازی Mediapipe برای تحلیل جزئیات چهره
+# 🔹 Initialize Mediapipe Face Mesh
 mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, refine_landmarks=True, min_detection_confidence=0.7)
+face_mesh = mp_face_mesh.FaceMesh(
+    static_image_mode=False,
+    max_num_faces=1,
+    refine_landmarks=True,
+    min_detection_confidence=0.7,
+    min_tracking_confidence=0.7
+)
 
-# 🔹 دریافت رزولوشن بیشینه‌ی پشتیبانی شده توسط وب‌کم
-cap = cv2.VideoCapture(0)
-max_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-max_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-fps = int(cap.get(cv2.CAP_PROP_FPS)) if cap.get(cv2.CAP_PROP_FPS) > 0 else 30
-
-print(f"📷 بالاترین رزولوشن پشتیبانی شده: {max_width}x{max_height} @ {fps} FPS")
-
+# 🔹 Capture video stream
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+max_width = 1280
+max_height = 720
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, max_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, max_height)
-cap.set(cv2.CAP_PROP_FPS, fps)
+cap.set(cv2.CAP_PROP_FPS, 60)
 
-# 🔹 متغیر برای ذخیره احساس تشخیص داده‌شده
-detected_emotion = "در حال تحلیل..."
+print(f"📷 Resolution: {max_width}x{max_height}")
 
-# 🔹 تنظیم پنجره‌ی نمایش احساسات با `Turtle`
-emotion_screen = turtle.Screen()
-emotion_screen.setup(400, 200)
-emotion_screen.bgcolor("black")
-emotion_screen.title("تحلیل احساسات")
-emotion_turtle = turtle.Turtle()
-emotion_turtle.hideturtle()
-emotion_turtle.penup()
-emotion_turtle.color("white")
+# 🔹 Emotion analysis variables
+detected_emotion = "Analyzing..."
+emotion_history = deque(maxlen=30)
+emotion_lock = threading.Lock()
+last_analysis_time = time.time()
+analysis_interval = 0.5  # seconds
 
-# 🔹 تنظیم پنجره‌ی اطلاعات توسعه‌دهنده
-info_screen = turtle.Screen()
-info_screen.setup(400, 200)
-info_screen.bgcolor("darkgreen")
-info_screen.title("اطلاعات توسعه‌دهنده")
-info_turtle = turtle.Turtle()
-info_turtle.hideturtle()
-info_turtle.penup()
-info_turtle.color("white")
-info_turtle.goto(-180, 50)
-info_turtle.write("👨‍💻 توسعه‌دهنده: شایان طاهرخانی\n📧 ایمیل: shayanthn78@gmail.com\n🌎 گیت‌هاب: github.com/shayanthn", 
-                  align="left", font=("B Nazanin", 14, "bold"))
+# 🔹 Sound effects initialization
+pygame.mixer.init()
+sound_effects = {
+    "happy": pygame.mixer.Sound(pygame.mixer.Sound(bytes(2000)) if False else None,
+    "sad": pygame.mixer.Sound(pygame.mixer.Sound(bytes(1000)) if False else None
+}
 
-# 🔹 دریافت مسیر فونت `B Nazanin` از ویندوز
-def get_b_nazanin_font():
-    font_dir = "C:/Windows/Fonts"
-    font_files = ["BNAZANIN.TTF", "B_NAZANIN.TTF", "BNazanin.ttf", "b_nazanin.ttf"]
-    for font_file in font_files:
-        font_path = os.path.join(font_dir, font_file)
-        if os.path.exists(font_path):
-            return font_path
-    return None  # اگر فونت پیدا نشد
+# 🔹 Performance metrics
+fps_counter = 0
+fps_last_time = time.time()
+fps_deque = deque(maxlen=30)
 
-b_nazanin_font = get_b_nazanin_font()
+# 🔹 Developer information
+DEV_INFO = {
+    "name": "Shayan Taherkhani",
+    "website": "shayantaherkhani.ir",
+    "github": "github.com/shayanthn",
+    "email": "admin@shayantaherkhani.ir"
+}
 
-# 🔹 تابع برای تحلیل احساسات در `Thread`
+# 🔹 Emotion color mapping
+EMOTION_COLORS = {
+    "happy": (0, 255, 255),    # Yellow
+    "sad": (255, 0, 0),        # Blue
+    "angry": (0, 0, 255),      # Red
+    "surprise": (255, 0, 255), # Magenta
+    "fear": (0, 165, 255),     # Orange
+    "disgust": (0, 255, 0),    # Green
+    "neutral": (200, 200, 200) # Gray
+}
+
+# 🔹 Thread-safe emotion analysis
 def analyze_emotion(face):
     global detected_emotion
     try:
-        analysis = DeepFace.analyze(face, actions=['emotion'], enforce_detection=False, detector_backend='opencv')
+        analysis = DeepFace.analyze(
+            face, 
+            actions=['emotion'], 
+            enforce_detection=False, 
+            detector_backend='opencv',
+            silent=True
+        )
         emotions = analysis[0]['emotion']
-        detected_emotion = max(emotions, key=emotions.get)
+        emotion = max(emotions, key=emotions.get)
+        
+        with emotion_lock:
+            detected_emotion = emotion
+            emotion_history.append(emotion)
+            
+            # Trigger sound effect
+            if emotion in sound_effects and sound_effects[emotion]:
+                sound_effects[emotion].play()
+                
     except Exception as e:
-        detected_emotion = "خطا در تشخیص"
+        print(f"⚠️ Analysis error: {str(e)}")
 
-# 🔹 حلقه‌ی اصلی برای دریافت و پردازش فریم‌ها
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("🚨 خطا در دریافت تصویر از وب‌کم!")
-        break
+# 🔹 Draw developer info overlay
+def draw_dev_info(frame):
+    y_offset = 30
+    for i, (key, value) in enumerate(DEV_INFO.items()):
+        text = f"{key.capitalize()}: {value}"
+        cv2.putText(frame, text, (10, y_offset + i*30), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, 
+                   (0, 255, 0), 2)
 
-    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    results = face_mesh.process(rgb_frame)
+# 🔹 Draw emotion history graph
+def draw_emotion_graph(frame, history):
+    if not history:
+        return
+    
+    graph_height = 100
+    graph_width = 300
+    graph_x = frame.shape[1] - graph_width - 20
+    graph_y = 20
+    
+    # Draw graph background
+    cv2.rectangle(frame, (graph_x, graph_y), 
+                 (graph_x + graph_width, graph_y + graph_height),
+                 (40, 40, 40), -1)
+    
+    # Draw data points
+    emotion_values = list(history)
+    for i in range(1, len(emotion_values)):
+        color = EMOTION_COLORS.get(emotion_values[i], (200, 200, 200))
+        y1 = graph_y + graph_height - (i-1)*3
+        y2 = graph_y + graph_height - i*3
+        cv2.line(frame, 
+                (graph_x + (i-1)*10, y1),
+                (graph_x + i*10, y2),
+                color, 2)
 
-    if results.multi_face_landmarks:
-        for face_landmarks in results.multi_face_landmarks:
-            h, w, _ = frame.shape
-            landmark_points = [(int(lm.x * w), int(lm.y * h)) for lm in face_landmarks.landmark]
+# 🔹 Main processing loop
+try:
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            print("🚨 Frame capture error")
+            break
 
-            for point in landmark_points[:468]:  
-                cv2.circle(frame, point, 1, (255, 0, 0), -1)  
+        # 🔹 Calculate FPS
+        fps_counter += 1
+        if time.time() - fps_last_time >= 1.0:
+            fps = fps_counter
+            fps_deque.append(fps)
+            fps_counter = 0
+            fps_last_time = time.time()
+        
+        avg_fps = sum(fps_deque) / len(fps_deque) if fps_deque else 0
 
-            x_min, y_min = min(landmark_points)
-            x_max, y_max = max(landmark_points)
+        # 🔹 Process frame with Face Mesh
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(rgb_frame)
 
-            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 0, 255), 3)
+        if results.multi_face_landmarks:
+            for face_landmarks in results.multi_face_landmarks:
+                h, w, _ = frame.shape
+                landmark_points = [(int(lm.x * w), int(lm.y * h)) for lm in face_landmarks.landmark]
 
-            face_crop = frame[y_min:y_max, x_min:x_max]
+                # 🔹 Draw face landmarks
+                for point in landmark_points[::5]:  # Draw every 5th point for performance
+                    cv2.circle(frame, point, 1, (0, 255, 255), -1)
 
-            threading.Thread(target=analyze_emotion, args=(face_crop,)).start()
+                # 🔹 Get face bounding box
+                x_coords = [p[0] for p in landmark_points]
+                y_coords = [p[1] for p in landmark_points]
+                x_min, x_max = min(x_coords), max(x_coords)
+                y_min, y_max = min(y_coords), max(y_coords)
+                
+                # 🔹 Dynamic padding based on face size
+                padding = int((x_max - x_min) * 0.15)
+                x_min = max(0, x_min - padding)
+                y_min = max(0, y_min - padding)
+                x_max = min(w, x_max + padding)
+                y_max = min(h, y_max + padding)
 
-    # نمایش احساسات در پنجره‌ی OpenCV با فونت `B Nazanin`
-    img_pil = Image.fromarray(frame)
-    draw = ImageDraw.Draw(img_pil)
-    if b_nazanin_font:
-        try:
-            font = ImageFont.truetype(b_nazanin_font, 32)
-            draw.text((20, 60), f"احساس: {detected_emotion}", font=font, fill=(0, 255, 0))
-            frame = np.array(img_pil)
-        except:
-            cv2.putText(frame, f"احساس: {detected_emotion}", (20, 60), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                # 🔹 Draw face bounding box
+                color = EMOTION_COLORS.get(detected_emotion, (200, 200, 200))
+                cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color, 3)
+                
+                # 🔹 Analyze emotion at intervals
+                current_time = time.time()
+                if current_time - last_analysis_time > analysis_interval:
+                    face_crop = frame[y_min:y_max, x_min:x_max]
+                    if face_crop.size > 0:
+                        threading.Thread(target=analyze_emotion, args=(face_crop,), daemon=True).start()
+                        last_analysis_time = current_time
 
-    # بروزرسانی احساسات در پنجره‌ی `Turtle`
-    emotion_turtle.clear()
-    emotion_turtle.goto(-80, 0)
-    emotion_turtle.write(f"احساس: {detected_emotion}", align="center", font=("B Nazanin", 24, "bold"))
+        # 🔹 Display emotion information
+        color = EMOTION_COLORS.get(detected_emotion, (200, 200, 200))
+        cv2.putText(frame, f"Emotion: {detected_emotion}", (20, 40), 
+                   cv2.FONT_HERSHEY_DUPLEX, 1.2, color, 2)
+        
+        # 🔹 Display FPS
+        cv2.putText(frame, f"FPS: {avg_fps:.1f}", (frame.shape[1]-150, 40), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        
+        # 🔹 Display emotion history graph
+        draw_emotion_graph(frame, emotion_history)
+        
+        # 🔹 Display developer info
+        draw_dev_info(frame)
+        
+        # 🔹 Show timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cv2.putText(frame, timestamp, (frame.shape[1]-300, frame.shape[0]-20), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (150, 150, 150), 1)
 
-    cv2.imshow("تحلیل احساسات - دکمه 'q' برای خروج", frame)
+        # 🔹 Display frame
+        cv2.imshow("Advanced Emotion Analysis - Press 'ESC' to exit", frame)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        # 🔹 Exit on ESC key
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
 
-# بستن منابع
-cap.release()
-cv2.destroyAllWindows()
-emotion_screen.bye()
-info_screen.bye()
+finally:
+    cap.release()
+    cv2.destroyAllWindows()
+    pygame.mixer.quit()
 
-## https://github.com/Shayanthn
-## shayanthn78@gmail.com
-""" 🚀 About the Developer
-Python Expert | Advanced English Instructor | Creative Thinker
-
-Passionate Python developer with expertise in web development, AI, automation, and data science. Skilled in problem-solving, clean code, and scalable solutions. Also an advanced English instructor with strong communication and technical documentation abilities.
-
-💡 Innovator & Idea Generator | Always seeking to create efficient, cutting-edge projects.
-📌 Proficient in Django, Flask, FastAPI, TensorFlow, Pandas, Selenium, and more.
-🚀 Open to collaboration on GitHub and tech-driven projects.
- """
-
+print("✅ Session ended successfully")
